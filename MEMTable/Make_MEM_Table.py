@@ -70,8 +70,10 @@ def Get_ROC_TGraph( sig_eff, bkg_eff ):
 
     if len(sig_eff) != len(bkg_eff):
         print 'Warning: efficiency lists are not equally sized. Ignoring some points'
+        print '    len(sig_eff) = {0}, len(bkg_eff) = {1}'.format(
+            len(sig_eff), len(bkg_eff) )
 
-    n_points = max( len(sig_eff), len(bkg_eff) )
+    n_points = min( len(sig_eff), len(bkg_eff) )
 
     ROC = ROOT.TGraph( n_points )
 
@@ -360,7 +362,9 @@ def main():
     ROOT.gStyle.SetOptFit(1011)
 
     input_path = '/shome/tklijnsm/Samples/MEMresults/'
-    input_dir = 'BMEM_V11_SB_FULL'
+
+    #input_dir = 'BMEM_V11_SB_FULL'
+    input_dir = 'BMEM_V11_SB_FULL_njetsbranches_S5changed'
 
     sig_input_root_fn = 'tth_V11_13tev.root'
     bkg_input_root_fn = 'ttjets_V11_13tev.root'
@@ -398,10 +402,10 @@ def main():
     bkg_constant = 0.12
 
     hypo = 'testhypo' # Rename this properly
-    i_hypo = 0
+    i_hypo = 1
 
     hypo_sj = 'testhypo' # Rename this properly
-    i_hypo_sj = 2
+    i_hypo_sj = 3
 
 
     # Selection string lists for the horizontal axis
