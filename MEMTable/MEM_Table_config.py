@@ -3,7 +3,81 @@ class MEM_Table_configuration:
  
         #self.NewTF_vs_OldTF()
         #self.NewTF_vs_OldTF_4_plots()
-        self.NoPerm_vs_Perm()
+        #self.NoPerm_vs_Perm()
+
+        self.Cat_changed_and_added_events()
+
+
+        # For next run:
+        #"SL_2qW",
+        #"SL_2qW_sj",
+        #"SL_2qW_sj_perm",
+        #"SL_2qW_NewTF",
+        #"SL_2qW_sj_NewTF",
+        #"SL_2qW_sj_perm_NewTF",
+
+
+    def Cat_changed_and_added_events(self):
+
+        self.input_dir = 'BMEM_PERM'
+
+        self.output_dir = self.input_dir + '_cat1_changed_and_added'
+
+        # Define which index belongs to which hypothesis
+        # (Should be read from MEAnalysis_cfg_heppy.py)
+        self.hypo_dict = {
+            "SL_2qW" : 0,
+            "SL_1qW" : 1,
+            "SL_2qW_sj" : 2,
+            "SL_1qW_sj" : 3,
+            "SL_2qW_sj_perm" : 4,
+            "SL_1qW_sj_perm" : 5,
+            }
+
+        # Define the background constant
+        self.bkg_constant = 0.12
+
+        # Define which hypothesis should be compared
+        self.compare_dict = {
+
+            'Perm_2qW' : ( 'SL_2qW' , 'SL_2qW_sj' ),
+            #'Perm_1qW' : ( 'SL_1qW' , 'SL_1qW_sj_perm' ),
+
+            }
+
+        # Selection criteria in this list are applied to all cells
+        self.sel_list_for_all = [
+            #'nhttCandidate_aftercuts>0',
+            ]
+
+
+        self.x_key_list = [
+
+            #'All',
+            #'No_htt',
+            #'htt',
+            #'0b_matched',
+            #'1b_matched',
+            #'2or3b_matched',
+
+            'All',
+            'cat_btagH',
+            'not_cat_btagH',
+
+            ]
+
+        self.y_key_list = [
+
+            #'NA',
+            'cat1',
+            #'cat1&&cat_btag==H',
+            #'cat1&&cat_btag!=H',
+            'cat2',
+            #'cat2&&cat_btag==H',
+            #'cat2&&cat_btag!=H',
+            'cat3',
+            ]
+
 
 
     def NoPerm_vs_Perm(self):

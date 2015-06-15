@@ -498,29 +498,67 @@ def main():
 
             # Vertical axis
 
-            'Cat1' : [
+            'cat_btagH' : [
+                'cat_btag==1',
+                ],
+
+            'not_cat_btagH' : [
+                'cat_btag!=1',
+                ],
+
+            'cat1' : [
                 'cat==1',
                 ],
 
-            'Cat2' : [
+            'cat1&&cat_btag==H' : [
+                'cat==1',
+                'cat_btag==1',
+                ],
+
+            'cat1&&cat_btag!=H' : [
+                'cat==1',
+                'cat_btag<1',
+                ],
+
+            'cat2' : [
                 'cat==2',
                 ],
 
-            'Cat3' : [
+            'cat2&&cat_btag==H' : [
+                'cat==2',
+                'cat_btag==1',
+                ],
+
+            'cat2&&cat_btag!=H' : [
+                'cat==2',
+                'cat_btag<1',
+                ],
+
+            'cat3' : [
                 'cat==3',
                 ],
 
-            'Cat12' : [
+            'cat3&&cat_btag==H' : [
+                'cat==3',
+                'cat_btag==1',
+                ],
+
+            'cat3&&cat_btag!=H' : [
+                'cat==3',
+                'cat_btag<1',
+                ],
+
+            'cat12' : [
                 'cat==1',
                 'cat==2',
                 ],
 
-            'Cat123' : [
+            'cat123' : [
                 'cat>=1',
                 'cat<=3',
                 ],
 
-            'AllCat' : [
+            'Allcat' : [
                 ],
 
             }
