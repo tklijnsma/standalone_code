@@ -15,6 +15,8 @@ import ROOT
 import TTH.TTHNtupleAnalyzer.AccessHelpers as AH
 from itertools import cycle
 
+from MEM_Table_config import MEM_Table_configuration
+
 
 ########################################
 # Functions
@@ -229,7 +231,7 @@ class MEM_Tablecell_Object():
                 fn = 'MR_{0}'.format(histname)
                 fn_output = '{0}/plots/{1}'.format( output_dir, fn )
 
-                self.MEM_html_link_dict[comparison_key][hypo] = \
+                self.MEM_html_link_dict[comparison_key][hypo][key] = \
                     'plots/{0}'.format(fn)
 
                 # Pdf
@@ -312,10 +314,13 @@ class MEM_Tablecell_Object():
             for hypo in [ hypo_ver, hypo_hor ]:
 
                 LineColor_counter += 1
+
+                if LineColor_counter == 3: LineColor_counter += 1
                 if LineColor_counter == 5: LineColor_counter += 1
 
                 ROC = self.ROC_TGraphs_dict[comparison_key][hypo]
                 ROC.SetMarkerColor(LineColor_counter);
+                ROC.SetMarkerSize(0.5);
                 ROC.SetLineColor(LineColor_counter);
 
                 if not ROC.GetN() == 2:
@@ -380,54 +385,16 @@ def main():
     # Configuration
     ########################################
 
-    # Select directory from which to load samples
-    #input_dir = 'BMEM_V11_SB_FULL'
-    #input_dir = 'BMEM_V11_SB_FULL_njetsbranches_S5changed'
-    input_dir = 'BMEM_NEWTF'
+    config = MEM_Table_configuration()
 
-    output_dir = input_dir + '_output_test_oldtf'
-
-    # Define which index belongs to which hypothesis
-    # (Should be read from MEAnalysis_cfg_heppy.py)
-    hypo_dict = {
-        "SL_2qW" : 0,
-        "SL_1qW" : 1,
-        "SL_2qW_sj" : 2,
-        "SL_1qW_sj" : 3,
-        "SL_2qW_NewTF" : 4,
-        "SL_1qW_NewTF" : 5,
-        "SL_2qW_sj_NewTF" : 6,
-        "SL_1qW_sj_NewTF" : 7,
-        }
-
-    # Define the background constant
-    bkg_constant = 0.12
-
-    # Define which hypothesis should be compared
-    compare_dict = {
-
-        'OldTF_2qW' : ( 'SL_2qW' , 'SL_2qW_sj' ),
-        'OldTF_1qW' : ( 'SL_1qW' , 'SL_1qW_sj' ),
-
-        #'NewTF_2qW' : ( 'SL_2qW_NewTF' , 'SL_2qW_sj_NewTF' ),
-        #'NewTF_1qW' : ( 'SL_1qW_NewTF' , 'SL_1qW_sj_NewTF' ),
-
-        }
-
-    # Selection criteria in this list are applied to all cells
-    sel_list_for_all = [
-        #'nhttCandidate_aftercuts>0',
-        ]
-
-
-    # To keep order consistent and easily turn categories on or off
-
-    x_key_list = [ 'All', 'No_htt', 'htt',
-                   '0b_matched', '1b_matched', '2or3b_matched' ]
-    y_key_list = [ 'NA', 'Cat1', 'Cat2', 'Cat3', 'Cat123' ]
-
-    #x_key_list = [ 'No_htt', 'htt' ]
-    #y_key_list = [ 'Cat1', 'AllCat' ]
+    input_dir = config.input_dir
+    output_dir = config.output_dir
+    hypo_dict = config.hypo_dict
+    bkg_constant = config.bkg_constant
+    compare_dict = config.compare_dict
+    sel_list_for_all = config.sel_list_for_all
+    x_key_list = config.x_key_list
+    y_key_list = config.y_key_list
 
 
     ########################################
@@ -457,14 +424,8 @@ def main():
                 'sig_input_root_fn'     : sig_input_root_fn,
                 'bkg_input_root_fn'     : bkg_input_root_fn,
                 'output_dir'            : output_dir,
-                'html_overview_files'   : {}, # Filled with file-pointers in loop
                 'root_canvas'           : c1,
               }
-
-
-    ########################################
-    # Set up for loop
-    ########################################
 
     # Initialize MEM_Table
     MEM_Table = {}
@@ -650,9 +611,11 @@ def main():
 
                 # Write the four MEM Ratio histograms to the overview
                 for hypo in compare_dict[comparison_key]:
-                    hf.write( '<a href="{0}"><img width="300" src="{0}.png">' \
-                              '</a>\n'.format(
-                                  cell.MEM_html_link_dict[comparison_key][hypo]) )
+                    for key in [ 'sig', 'bkg' ]:
+                        hf.write(
+                            '<a href="{0}"><img width="300" src="{0}.png">' \
+                            '</a>\n'.format(
+                                cell.MEM_html_link_dict[comparison_key][hypo][key]) )
 
                 # Write the ROC curve plus html anchor to overview
                 hf.write('<a name="{0}"></a>\n'.format(cell.ROC_html_anchor) )
