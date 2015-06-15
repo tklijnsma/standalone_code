@@ -107,50 +107,36 @@ class MEM_Tablecell_Object():
         self.MEM_html_link_dict = {}
 
 
-    def Set_draw_strs( self, comparison_key,
-                             hypo_ver,   hypo_hor,
-                             i_hypo_ver, i_hypo_hor,
-                             bkg_constant ):
+    def Set_draw_strs( self, hypo, i_hypo, bkg_constant ):
 
-        self.histnames_dict[comparison_key] = {}
-        self.draw_dict[comparison_key] = {}
+        self.histnames_dict[hypo] = {}
+        self.draw_dict[hypo] = {}
 
-        for ( i_hypo, hypo ) in [ ( i_hypo_ver, hypo_ver ),
-                                  ( i_hypo_hor, hypo_hor ) ] :
+        for key in [ 'sig', 'bkg' ]:
 
-            self.histnames_dict[comparison_key][hypo] = {}
-            self.draw_dict[comparison_key][hypo] = {}
+            # Dictionary of histogram names
+            self.histnames_dict[hypo][key] = \
+                '{0}_{1}_{2}_{3}'.format(
+                    hypo,
+                    key,
+                    self.x_key,
+                    self.y_key,
+                    )
 
-            for key in [ 'sig', 'bkg' ]:
-
-                # Dictionary of histogram names
-                self.histnames_dict[comparison_key][hypo][key] = \
-                    '{0}_{1}_{2}_{3}_{4}'.format(
-                        comparison_key,
-                        hypo,
-                        key,
-                        self.x_key,
-                        self.y_key,
-                        )
-
-                # Dictionary of draw strings per histogram
-                self.draw_dict[comparison_key][hypo][key] = \
-                    'mem_tth_p[{0}]/(mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}])' \
-                    '>>{2}(100,0.0,1.0)'.format(
-                        i_hypo,
-                        bkg_constant,
-                        self.histnames_dict[comparison_key][hypo][key],
-                        )
+            # Dictionary of draw strings per histogram
+            self.draw_dict[hypo][key] = \
+                'mem_tth_p[{0}]/(mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}])' \
+                '>>{2}(100,0.0,1.0)'.format(
+                    i_hypo,
+                    bkg_constant,
+                    self.histnames_dict[hypo][key],
+                    )
 
         # Only select non-zero results
-        # (This is the only selection that differs for hypo_hor and hypo_ver,
+        # (This is the only selection that differs per hypothesis,
         # but it is still the same for sig and bkg)
-        self.sel_strs[comparison_key] = {
-            hypo_ver : 'mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}]>0'.format(
-                        i_hypo_ver, bkg_constant ),
-            hypo_hor : 'mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}]>0'.format(
-                        i_hypo_hor, bkg_constant ),
-            }
+        self.sel_strs[hypo] = 'mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}]>0'.format(
+                                    i_hypo, bkg_constant )
 
 
     def Print_Object(self): # OUTDATED
@@ -167,27 +153,21 @@ class MEM_Tablecell_Object():
         for i in self.sel_strs: print i
 
 
-    def Create_MEM_ratio_plots( self, comparison_key, hypo_ver, hypo_hor, IO_dict ):
+    def Create_MEM_ratio_hists( self, hypo, IO_dict ):
 
         # Convenient references
         input_dir   = IO_dict['input_dir']
         input_path  = IO_dict['input_path']
         output_dir  = IO_dict['output_dir']
-        c1          = IO_dict['root_canvas']
+        c1          = IO_dict['MEM_canvas']
 
         input_root_fns = { 'sig' : IO_dict['sig_input_root_fn'],
                            'bkg' : IO_dict['bkg_input_root_fn'] }
 
         # Open up spots to write histograms to
-        self.mem_hist_dict[comparison_key] = { 
-            hypo_ver : { 'sig' : [ 0, 0 ], 'bkg' : [ 0, 0 ] },
-            hypo_hor : { 'sig' : [ 0, 0 ], 'bkg' : [ 0, 0 ] }
-            }
+        self.mem_hist_dict[hypo] =  { 'sig' : 0, 'bkg' : 0 }
+        self.MEM_html_link_dict[hypo] = { 'sig' : '', 'bkg' : '' }
 
-        self.MEM_html_link_dict[comparison_key] = {
-            hypo_ver : { 'sig' : [ '', '' ], 'bkg' : [ '', '' ] },
-            hypo_hor : { 'sig' : [ '', '' ], 'bkg' : [ '', '' ] }
-            }
 
         for key in [ 'sig', 'bkg' ]:
 
@@ -195,91 +175,152 @@ class MEM_Tablecell_Object():
                 input_path + '/' + input_dir + '/' + input_root_fns[key] )
             input_tree = input_root_file.Get('tree')
 
-            for hypo in [ hypo_ver, hypo_hor ]:
+            histname = self.histnames_dict[hypo][key]
+            draw_str = self.draw_dict[hypo][key]
+            sel_str = self.sel_strs[hypo]
 
-                histname = self.histnames_dict[comparison_key][hypo][key]
-                draw_str = self.draw_dict[comparison_key][hypo][key]
-                sel_str = self.sel_strs[comparison_key][hypo]
+            # Retrieve the histogram
+            n_entries = input_tree.Draw( draw_str, sel_str )
 
-                # Retrieve the histogram
-                n_entries = input_tree.Draw( draw_str, sel_str )
+            if n_entries > 0:
+                mem_hist = getattr(ROOT, histname ).Clone()
+            else:
+                mem_hist = ROOT.TH1F()
+            
+            mem_hist.SetTitle( '{0}_{1}'.format( hypo, key ) )
 
-                if n_entries > 0:
-                    mem_hist = getattr(ROOT, histname ).Clone()
-                else:
-                    mem_hist = ROOT.TH1F()
-                
-                mem_hist.SetTitle( '{0}::{1}::{2} ({3} vs. {4})'.format(
-                    comparison_key,
-                    hypo,
-                    key,
-                    hypo_ver,
-                    hypo_hor,
-                    ) )
-
-                # Draw again to display title <-- This should be moved to a 
-                #                                 separate function at some point
-                mem_hist.Draw()
-
-                # Save the histogram to the cell object
-                self.mem_hist_dict[comparison_key][hypo][key] = copy.deepcopy(
-                                                                    mem_hist )
-
-                # IO operations
-                # ======================================
-
-                fn = 'MR_{0}'.format(histname)
-                fn_output = '{0}/plots/{1}'.format( output_dir, fn )
-
-                self.MEM_html_link_dict[comparison_key][hypo][key] = \
-                    'plots/{0}'.format(fn)
-
-                # Pdf
-                c1.Print( fn_output , 'pdf' )
-
-                # Png
-                img = ROOT.TImage.Create()
-                img.FromPad(c1)
-                img.WriteImage('{0}.png'.format( fn_output ) )
-
+            # Save the histogram to the cell object
+            self.mem_hist_dict[hypo][key] = copy.deepcopy( mem_hist )
 
         
-    def Create_ROC_TGraphs(self, comparison_key, hypo_ver, hypo_hor, IO_dict ):
+    def Create_ROC_TGraphs(self, hypo, IO_dict ):
 
         input_dir   = IO_dict['input_dir']
         input_path  = IO_dict['input_path']
         output_dir  = IO_dict['output_dir']
-        c1          = IO_dict['root_canvas']
+        c1          = IO_dict['ROC_canvas']
 
         # Initialize dicts
         eff_dict = { 'sig' : [] , 'bkg' : [] }
-        self.ROC_TGraphs_dict[comparison_key] = {}
+        self.ROC_TGraphs_dict[hypo] = {}
 
-        for hypo in [ hypo_ver, hypo_hor ]:
+        # Get efficiency lists
+        for key in [ 'sig', 'bkg' ]:
+            eff_dict[key] = Get_hist_efficiency( self.mem_hist_dict[hypo][key] )
 
-            # Get efficiency lists
-            for key in [ 'sig', 'bkg' ]:
-                eff_dict[key] = Get_hist_efficiency(
-                    self.mem_hist_dict[comparison_key][hypo][key] )
+        # Get filled TGraph object
+        ROC = Get_ROC_TGraph( eff_dict['sig'], eff_dict['bkg'] )
 
-            # Get filled TGraph object
-            ROC = Get_ROC_TGraph( eff_dict['sig'], eff_dict['bkg'] )
+        plottitle = '{0}\nSelecting {1} AND {2}'.format( hypo,
+                                                         self.y_key, self.x_key )
 
-            plottitle = '{0}: {1} vs. {2}\n' \
-                        'hor. cat: {3:10s} ver. cat: {4:10s}'.format(
-                            comparison_key,
-                            hypo_ver, hypo_hor,
-                            self.y_key, self.x_key )
+        ROC.SetTitle( plottitle )
+        ROC.SetMarkerStyle(22);
+        ROC.SetMarkerSize(0.6);
 
-            ROC.SetTitle( plottitle )
-            ROC.SetMarkerStyle(22);
-            ROC.SetMarkerSize(0.6);
-
-            # Store TGraph object in class
-            self.ROC_TGraphs_dict[comparison_key][hypo] = ROC
+        # Store TGraph object in class
+        self.ROC_TGraphs_dict[hypo] = ROC
 
 
-    def Create_ROC_Image( self, compare_dict, IO_dict ):
+    def Create_MEM_ratio_Image( self, hypo_list, IO_dict ):
+
+        # Convenient references
+        input_dir   = IO_dict['input_dir']
+        input_path  = IO_dict['input_path']
+        output_dir  = IO_dict['output_dir']
+        c1          = IO_dict['MEM_canvas']
+        c1.cd()
+
+        empty_hist = ROOT.TH1F()
+
+        # Set label specifics
+        lbl = ROOT.TText()
+        lbl.SetNDC()
+        lbl.SetTextSize(0.04)
+
+        for key in [ 'sig', 'bkg' ]:
+
+            # Draw empty histogram (keeps axes and grid this way)
+            empty_hist.Draw()
+            c1.Update()
+            LineColor_counter = 1
+
+            # Starting coordinates and variabeles for labels
+            anchorx  = 0.74
+            anchory  = 0.85
+            endl     = 0.05
+            big_endl = 0.07
+            anchorx_shift = 0.15
+
+            # To be overridden by the maximum of the highest histogram
+            y_axis_cut = 0.0
+
+            for hypo in hypo_list:
+
+                histname = self.histnames_dict[hypo][key]
+                mem_hist = self.mem_hist_dict[hypo][key]
+
+                # Find maximum in all histograms
+                mem_hist_max = mem_hist.GetMaximum()
+                if mem_hist_max > y_axis_cut: y_axis_cut = mem_hist_max
+
+                LineColor_counter += 1
+
+                # I don't like colors 3 and 5
+                if LineColor_counter == 3: LineColor_counter += 1
+                if LineColor_counter == 5: LineColor_counter += 1
+
+                mem_hist.SetLineColor(LineColor_counter)
+                mem_hist.Draw('SAME')
+
+
+                # Adding labels to plot
+                # ======================================
+
+                lbl.SetTextColor(LineColor_counter)
+                lbl.DrawText( anchorx, anchory, hypo )
+                anchory -= endl
+
+                lbl.SetTextColor(1)
+                lbl.DrawText( anchorx, anchory , 'sig entries' )
+                lbl.DrawText(
+                    anchorx+anchorx_shift,
+                    anchory,
+                    '{0:.0f}'.format( self.mem_hist_dict[hypo]['sig'].GetEntries()) )
+                anchory -= endl
+
+                lbl.DrawText( anchorx, anchory , 'bkg entries' )
+                lbl.DrawText(
+                    anchorx+anchorx_shift,
+                    anchory,
+                    '{0:.0f}'.format( self.mem_hist_dict[hypo]['bkg'].GetEntries()) )
+                anchory -= big_endl
+
+
+            empty_hist.SetMaximum(y_axis_cut+1.0)
+            c1.Update()
+
+            # IO operations
+            # ======================================
+
+            fn = 'MR_{0}_{1}_{2}'.format( key, self.x_key, self.y_key )
+            fn_output = '{0}/plots/{1}'.format( output_dir, fn )
+
+            self.MEM_html_link_dict[key] = 'plots/{0}'.format(fn)
+
+            # Pdf
+            c1.Print( fn_output , 'pdf' )
+
+            # Png
+            img = ROOT.TImage.Create()
+            img.FromPad(c1)
+            img.WriteImage('{0}.png'.format( fn_output ) )
+    
+
+    def Create_ROC_Image( self, hypo_list, IO_dict ):
+
+        c1 = IO_dict['ROC_canvas']
+        c1.cd()
 
         # Draw a straight line
         gr_straight = ROOT.TGraph( 2 )
@@ -292,13 +333,14 @@ class MEM_Tablecell_Object():
             self.y_key, self.x_key ) )
         gr_straight.Draw('AL')
 
-        IO_dict['root_canvas'].Update()
+        c1.Update()
 
         # Starting coordinates and variabeles for labels
         anchorx  = 0.7
         anchory  = 0.85
         endl     = 0.05
         big_endl = 0.07
+        anchorx_shift = 0.19
 
         # Set label specifics
         lbl = ROOT.TText()
@@ -307,71 +349,62 @@ class MEM_Tablecell_Object():
 
         LineColor_counter = 1
 
-        for comparison_key in self.ROC_TGraphs_dict:
+        for hypo in hypo_list:
 
-            ( hypo_ver, hypo_hor ) = compare_dict[comparison_key]
+            LineColor_counter += 1
 
-            for hypo in [ hypo_ver, hypo_hor ]:
+            if LineColor_counter == 3: LineColor_counter += 1
+            if LineColor_counter == 5: LineColor_counter += 1
 
-                LineColor_counter += 1
+            ROC = self.ROC_TGraphs_dict[hypo]
+            ROC.SetMarkerColor(LineColor_counter);
+            ROC.SetMarkerSize(0.5);
+            ROC.SetLineColor(LineColor_counter);
 
-                if LineColor_counter == 3: LineColor_counter += 1
-                if LineColor_counter == 5: LineColor_counter += 1
+            if not ROC.GetN() == 2:
+                ROC.Draw('LP')
 
-                ROC = self.ROC_TGraphs_dict[comparison_key][hypo]
-                ROC.SetMarkerColor(LineColor_counter);
-                ROC.SetMarkerSize(0.5);
-                ROC.SetLineColor(LineColor_counter);
+            # Adding labels to plot
+            # ======================================
 
-                if not ROC.GetN() == 2:
-                    ROC.Draw('LP')
+            lbl.SetTextColor(LineColor_counter)
+            lbl.DrawText( anchorx, anchory, hypo )
+            anchory -= endl
 
-                # Adding labels to plot
-                # ======================================
+            lbl.SetTextColor(1)
+            lbl.DrawText( anchorx, anchory , 'sig entries' )
+            lbl.DrawText(
+                anchorx+anchorx_shift,
+                anchory,
+                '{0:.0f}'.format( self.mem_hist_dict[hypo]['sig'].GetEntries()) )
+            anchory -= endl
 
-                lbl.SetTextColor(LineColor_counter)
-                lbl.DrawText( anchorx,
-                              anchory,
-                              '{0}::{1}'.format(comparison_key,hypo) )
-                anchory -= endl
+            lbl.DrawText( anchorx, anchory , 'bkg entries' )
+            lbl.DrawText(
+                anchorx+anchorx_shift,
+                anchory,
+                '{0:.0f}'.format( self.mem_hist_dict[hypo]['bkg'].GetEntries()) )
+            anchory -= big_endl
 
-                lbl.SetTextColor(1)
-                lbl.DrawText( anchorx, anchory , 'sig entries' )
-                lbl.DrawText(
-                    anchorx+0.19,
-                    anchory,
-                    '{0:.0f}'.format(
-                    self.mem_hist_dict[comparison_key][hypo]['sig'].GetEntries()) )
-                anchory -= endl
+            c1.Update()
 
-                lbl.DrawText( anchorx, anchory , 'bkg entries' )
-                lbl.DrawText(
-                    anchorx+0.19,
-                    anchory,
-                    '{0:.0f}'.format(
-                    self.mem_hist_dict[comparison_key][hypo]['bkg'].GetEntries()) )
-                anchory -= big_endl
+            # IO operations
+            # ======================================
 
-                IO_dict['root_canvas'].Update()
+            fn = 'ROC_{0}_{1}'.format( self.x_key, self.y_key )
+            fn_output = IO_dict['output_dir'] + '/plots/' + fn
 
-                # IO operations
-                # ======================================
+            # Save html link filename also to class to create the actual table
+            self.ROC_html_link   = 'plots/' + fn
+            self.ROC_html_anchor = fn
 
-                fn = 'ROC_{0}_{1}_{2}'.format( comparison_key,
-                                               self.x_key, self.y_key )
-                fn_output = IO_dict['output_dir'] + '/plots/' + fn
+            # Pdf
+            c1.Print( fn_output , 'pdf' )
 
-                # Save html link filename also to class to create the actual table
-                self.ROC_html_link   = 'plots/' + fn
-                self.ROC_html_anchor = fn
-
-                # Pdf
-                IO_dict['root_canvas'].Print( fn_output , 'pdf' )
-
-                # Png
-                img = ROOT.TImage.Create()
-                img.FromPad( IO_dict['root_canvas'] )
-                img.WriteImage('{0}.png'.format( fn_output ) )
+            # Png
+            img = ROOT.TImage.Create()
+            img.FromPad( c1 )
+            img.WriteImage('{0}.png'.format( fn_output ) )
 
 
 
@@ -391,11 +424,12 @@ def main():
     output_dir = config.output_dir
     hypo_dict = config.hypo_dict
     bkg_constant = config.bkg_constant
-    compare_dict = config.compare_dict
     sel_list_for_all = config.sel_list_for_all
     x_key_list = config.x_key_list
     y_key_list = config.y_key_list
 
+    #compare_dict = config.compare_dict
+    hypo_list = config.hypo_list
 
     ########################################
     # Set up for loop
@@ -403,7 +437,9 @@ def main():
 
     ROOT.gROOT.SetBatch(True)
     ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = 1001;")
+
     ROOT.gStyle.SetOptFit(1011)
+    ROOT.gStyle.SetOptStat(0)
 
     input_path = '/shome/tklijnsm/Samples/MEMresults/'
 
@@ -415,8 +451,16 @@ def main():
         shutil.rmtree( output_dir )
     os.makedirs( output_dir + '/plots' )    
 
-    c1 = ROOT.TCanvas("c1","c1",500,400)
+    # Set up ROC canvas
+    c2 = ROOT.TCanvas("c2","c2",600,400)
+    c2.SetGrid()
+    c2.SetRightMargin(0.32)
+
+    # Set up MEM ratio canvas TODO: log scale
+    c1 = ROOT.TCanvas("c1","c1",700,400)
     c1.SetGrid()
+    c1.SetRightMargin(0.28)
+    #c1.SetLogy()
 
     # All IO info contained
     IO_dict = { 'input_path'            : input_path,
@@ -424,7 +468,8 @@ def main():
                 'sig_input_root_fn'     : sig_input_root_fn,
                 'bkg_input_root_fn'     : bkg_input_root_fn,
                 'output_dir'            : output_dir,
-                'root_canvas'           : c1,
+                'MEM_canvas'            : c1,
+                'ROC_canvas'            : c2,
               }
 
     # Initialize MEM_Table
@@ -440,17 +485,12 @@ def main():
     # Loop over the hypothesis-comparisons
     ########################################
 
-    for comparison_key in compare_dict:
-
-        # Retrieve the hypothesis names
-        ( hypo_ver, hypo_hor ) = compare_dict[comparison_key]
+    for hypo in hypo_list:
 
         # Get corresponding list index in ROOT MEM branch
-        i_hypo_ver = hypo_dict[hypo_ver]
-        i_hypo_hor = hypo_dict[hypo_hor]
+        i_hypo = hypo_dict[hypo]
 
-        print '\nRunning comparison {0}   ( {1} vs. {2} )'.format(
-            comparison_key, hypo_ver, hypo_hor )
+        print '\nRunning hypothesis {0}'.format(hypo)
 
         # Define selection string dict
         # ======================================
@@ -490,11 +530,6 @@ def main():
                 'Matching_event_type_number<=11',
                 ],
 
-            'NA' : [
-                'mem_tth_p[{0}]+{2}*mem_ttbb_p[{0}]>0&&'\
-                    'mem_tth_p[{1}]+{2}*mem_ttbb_p[{1}]==0'.format(
-                    i_hypo_hor, i_hypo_ver, bkg_constant ),
-                ],
 
             # Vertical axis
 
@@ -568,7 +603,7 @@ def main():
         # Fill the mem table and create figures
         ########################################
 
-        print '    Drawing MEM Ratio plots'
+        print '    Creating MEM Ratio histograms and ROC TGraphs'
 
         for x_key in x_key_list:
             for y_key in y_key_list:
@@ -580,10 +615,7 @@ def main():
                 cell = MEM_Table[x_key][y_key]
 
                 # Sets the draw strings and the unique selection strings
-                cell.Set_draw_strs( comparison_key,
-                                    hypo_ver,   hypo_hor,
-                                    i_hypo_ver, i_hypo_hor,
-                                    bkg_constant )
+                cell.Set_draw_strs( hypo, i_hypo, bkg_constant )
 
                 # Initialize list of selection strings
                 sel_list = []
@@ -598,30 +630,25 @@ def main():
 
                 # Add the full selection string to the selection strings in the class
                 if full_sel_str != '':
-                    cell.sel_strs[comparison_key][hypo_ver] += '&&' + full_sel_str
-                    cell.sel_strs[comparison_key][hypo_hor] += '&&' + full_sel_str
+                    cell.sel_strs[hypo] += '&&' + full_sel_str
 
-                cell.Create_MEM_ratio_plots( comparison_key,
-                                             hypo_ver, hypo_hor,
-                                             IO_dict )
+                cell.Create_MEM_ratio_hists( hypo, IO_dict )
 
-                cell.Create_ROC_TGraphs(     comparison_key,
-                                             hypo_ver, hypo_hor,
-                                             IO_dict )
+                cell.Create_ROC_TGraphs( hypo, IO_dict )
 
 
-    print '\nDrawing ROC plots'
 
     # Draw the ROC after the loop (includes all comparisons)
 
-    c2 = ROOT.TCanvas("c2","c2",600,400)
-    c2.SetGrid()
-    c2.SetRightMargin(0.32)
-    IO_dict['root_canvas'] = c2
-
+    print '\nDrawing all MEM ratio plots'
     for x_key in x_key_list:
         for y_key in y_key_list:
-            MEM_Table[x_key][y_key].Create_ROC_Image(  compare_dict, IO_dict )
+            MEM_Table[x_key][y_key].Create_MEM_ratio_Image( hypo_list, IO_dict )
+
+    print 'Drawing all ROC plots'
+    for x_key in x_key_list:
+        for y_key in y_key_list:
+            MEM_Table[x_key][y_key].Create_ROC_Image( hypo_list, IO_dict )
 
 
     ########################################
@@ -644,22 +671,17 @@ def main():
             # Set 'cell' as the current cell for easy reference
             cell = MEM_Table[x_key][y_key]
 
-            for comparison_key in compare_dict:
-                hf = hf_overview
+            for key in [ 'sig', 'bkg' ]:
+                hf_overview.write(
+                    '<a href="{0}"><img width="450" src="{0}.png"></a>\n'.format(
+                        cell.MEM_html_link_dict[key]) )
 
-                # Write the four MEM Ratio histograms to the overview
-                for hypo in compare_dict[comparison_key]:
-                    for key in [ 'sig', 'bkg' ]:
-                        hf.write(
-                            '<a href="{0}"><img width="300" src="{0}.png">' \
-                            '</a>\n'.format(
-                                cell.MEM_html_link_dict[comparison_key][hypo][key]) )
+            # Write the ROC curve plus html anchor to overview
+            hf_overview.write('<a name="{0}"></a>\n'.format(cell.ROC_html_anchor) )
+            hf_overview.write('<a href="{0}"><img width="400" src="{0}.png">' \
+                              '</a>\n'.format(cell.ROC_html_link) )
+            hf_overview.write('<br>\n')
 
-                # Write the ROC curve plus html anchor to overview
-                hf.write('<a name="{0}"></a>\n'.format(cell.ROC_html_anchor) )
-                hf.write('<a href="{0}"><img width="300" src="{0}.png">' \
-                         '</a>\n'.format(cell.ROC_html_link) )
-                hf.write('<br>\n')
 
     # Fill the table html file
     for y_key in y_key_list:

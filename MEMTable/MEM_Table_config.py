@@ -21,7 +21,7 @@ class MEM_Table_configuration:
 
         self.input_dir = 'BMEM_PERM'
 
-        self.output_dir = self.input_dir + '_cat1_changed_and_added'
+        self.output_dir = self.input_dir + '_test'
 
         # Define which index belongs to which hypothesis
         # (Should be read from MEAnalysis_cfg_heppy.py)
@@ -38,12 +38,18 @@ class MEM_Table_configuration:
         self.bkg_constant = 0.12
 
         # Define which hypothesis should be compared
-        self.compare_dict = {
+        #self.compare_dict = {
 
-            'Perm_2qW' : ( 'SL_2qW' , 'SL_2qW_sj' ),
+            #'Perm_2qW' : ( 'SL_2qW' , 'SL_2qW_sj' ),
             #'Perm_1qW' : ( 'SL_1qW' , 'SL_1qW_sj_perm' ),
 
-            }
+            #}
+
+        self.hypo_list = [
+            'SL_2qW',
+            'SL_2qW_sj',
+            'SL_2qW_sj_perm',
+            ]
 
         # Selection criteria in this list are applied to all cells
         self.sel_list_for_all = [
@@ -52,29 +58,14 @@ class MEM_Table_configuration:
 
 
         self.x_key_list = [
-
-            #'All',
-            #'No_htt',
-            #'htt',
-            #'0b_matched',
-            #'1b_matched',
-            #'2or3b_matched',
-
             'All',
             'cat_btagH',
             'not_cat_btagH',
-
             ]
 
         self.y_key_list = [
-
-            #'NA',
             'cat1',
-            #'cat1&&cat_btag==H',
-            #'cat1&&cat_btag!=H',
             'cat2',
-            #'cat2&&cat_btag==H',
-            #'cat2&&cat_btag!=H',
             'cat3',
             ]
 
