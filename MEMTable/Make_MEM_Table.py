@@ -415,7 +415,7 @@ class MEM_Tablecell_Object():
 def main():
 
     ########################################
-    # Configuration
+    # Read configuration
     ########################################
 
     config = MEM_Table_configuration()
@@ -427,6 +427,8 @@ def main():
     sel_list_for_all = config.sel_list_for_all
     x_key_list = config.x_key_list
     y_key_list = config.y_key_list
+
+    sel_dict = config.sel_dict
 
     #compare_dict = config.compare_dict
     hypo_list = config.hypo_list
@@ -491,112 +493,6 @@ def main():
         i_hypo = hypo_dict[hypo]
 
         print '\nRunning hypothesis {0}'.format(hypo)
-
-        # Define selection string dict
-        # ======================================
-
-        # Selection may depend on hypothesis, so include it in the loop
-
-        sel_dict = {
-
-            # Horizonal axis
-
-            'All' : [
-                ],
-
-            'No_htt' : [
-                'nhttCandidate_aftercuts<=0',
-                ],
-
-            'htt' : [
-                'nhttCandidate_aftercuts>0',
-                ],
-
-            '0b_matched' : [
-                'nhttCandidate_aftercuts>0',
-                'Matching_event_type_number>=1',
-                'Matching_event_type_number<=5',
-                ],
-
-            '1b_matched' : [
-                'nhttCandidate_aftercuts>0',
-                'Matching_event_type_number>=6',
-                'Matching_event_type_number<=8',
-                ],
-
-            '2or3b_matched' : [
-                'nhttCandidate_aftercuts>0',
-                'Matching_event_type_number>=9',
-                'Matching_event_type_number<=11',
-                ],
-
-
-            # Vertical axis
-
-            'cat_btagH' : [
-                'cat_btag==1',
-                ],
-
-            'not_cat_btagH' : [
-                'cat_btag!=1',
-                ],
-
-            'cat1' : [
-                'cat==1',
-                ],
-
-            'cat1&&cat_btag==H' : [
-                'cat==1',
-                'cat_btag==1',
-                ],
-
-            'cat1&&cat_btag!=H' : [
-                'cat==1',
-                'cat_btag<1',
-                ],
-
-            'cat2' : [
-                'cat==2',
-                ],
-
-            'cat2&&cat_btag==H' : [
-                'cat==2',
-                'cat_btag==1',
-                ],
-
-            'cat2&&cat_btag!=H' : [
-                'cat==2',
-                'cat_btag<1',
-                ],
-
-            'cat3' : [
-                'cat==3',
-                ],
-
-            'cat3&&cat_btag==H' : [
-                'cat==3',
-                'cat_btag==1',
-                ],
-
-            'cat3&&cat_btag!=H' : [
-                'cat==3',
-                'cat_btag<1',
-                ],
-
-            'cat12' : [
-                'cat==1',
-                'cat==2',
-                ],
-
-            'cat123' : [
-                'cat>=1',
-                'cat<=3',
-                ],
-
-            'Allcat' : [
-                ],
-
-            }
 
 
         ########################################

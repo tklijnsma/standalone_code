@@ -1,6 +1,12 @@
 class MEM_Table_configuration:
     def __init__(self):
- 
+        # Loads the dict which contains the selection strings for each category
+        self.Set_sel_dict() 
+
+
+        # Select one configuration here
+
+
         #self.NewTF_vs_OldTF()
         #self.NewTF_vs_OldTF_4_plots()
         #self.NoPerm_vs_Perm()
@@ -8,18 +14,10 @@ class MEM_Table_configuration:
         self.Cat_changed_and_added_events()
 
 
-        # For next run:
-        #"SL_2qW",
-        #"SL_2qW_sj",
-        #"SL_2qW_sj_perm",
-        #"SL_2qW_NewTF",
-        #"SL_2qW_sj_NewTF",
-        #"SL_2qW_sj_perm_NewTF",
-
 
     def Cat_changed_and_added_events(self):
 
-        self.input_dir = 'BMEM_PERM'
+        self.input_dir = 'A_NEWTF_PERM'
 
         self.output_dir = self.input_dir + '_test'
 
@@ -27,11 +25,11 @@ class MEM_Table_configuration:
         # (Should be read from MEAnalysis_cfg_heppy.py)
         self.hypo_dict = {
             "SL_2qW" : 0,
-            "SL_1qW" : 1,
-            "SL_2qW_sj" : 2,
-            "SL_1qW_sj" : 3,
-            "SL_2qW_sj_perm" : 4,
-            "SL_1qW_sj_perm" : 5,
+            "SL_2qW_sj" : 1,
+            "SL_2qW_sj_perm" : 2,
+            "SL_2qW_NewTF" : 3,
+            "SL_2qW_sj_NewTF" : 4,
+            "SL_2qW_sj_perm_NewTF" : 5,
             }
 
         # Define the background constant
@@ -46,9 +44,11 @@ class MEM_Table_configuration:
             #}
 
         self.hypo_list = [
+            'SL_2qW_NewTF',
+            'SL_2qW_sj_NewTF',
+            'SL_2qW_sj_perm_NewTF',
             'SL_2qW',
-            'SL_2qW_sj',
-            'SL_2qW_sj_perm',
+            #'SL_2qW_sj_perm',
             ]
 
         # Selection criteria in this list are applied to all cells
@@ -58,12 +58,15 @@ class MEM_Table_configuration:
 
 
         self.x_key_list = [
-            'All',
-            'cat_btagH',
-            'not_cat_btagH',
+            #'All',
+            'cat_btagH_+htt',
+            'not_cat_btagH_+htt',
+            'cat_btagH_nohtt',
+            'not_cat_btagH_nohtt',
             ]
 
         self.y_key_list = [
+            #'All',
             'cat1',
             'cat2',
             'cat3',
@@ -220,3 +223,132 @@ class MEM_Table_configuration:
 
         self.x_key_list = [ 'No_htt', 'htt' ]
         self.y_key_list = [ 'Cat1', 'AllCat' ]
+
+
+
+
+    def Set_sel_dict( self ):
+
+        self.sel_dict = {
+
+            # Horizonal axis
+
+            'All' : [
+                ],
+
+            'No_htt' : [
+                'nhttCandidate_aftercuts<=0',
+                ],
+
+            'htt' : [
+                'nhttCandidate_aftercuts>0',
+                ],
+
+            '0b_matched' : [
+                'nhttCandidate_aftercuts>0',
+                'Matching_event_type_number>=1',
+                'Matching_event_type_number<=5',
+                ],
+
+            '1b_matched' : [
+                'nhttCandidate_aftercuts>0',
+                'Matching_event_type_number>=6',
+                'Matching_event_type_number<=8',
+                ],
+
+            '2or3b_matched' : [
+                'nhttCandidate_aftercuts>0',
+                'Matching_event_type_number>=9',
+                'Matching_event_type_number<=11',
+                ],
+
+
+            # Vertical axis
+
+
+            'cat_btagH' : [
+                'cat_btag==1',
+                ],
+
+            'not_cat_btagH' : [
+                'cat_btag!=1',
+                ],
+
+            'cat_btagH_+htt' : [
+                'cat_btag==1',
+                'nhttCandidate_aftercuts>0',
+                ],
+
+            'not_cat_btagH_+htt' : [
+                'cat_btag!=1',
+                'nhttCandidate_aftercuts>0',
+                ],
+
+            'cat_btagH_nohtt' : [
+                'cat_btag==1',
+                'nhttCandidate_aftercuts<=0',
+                ],
+
+            'not_cat_btagH_nohtt' : [
+                'cat_btag!=1',
+                'nhttCandidate_aftercuts<=0',
+                ],
+
+
+
+            'cat1' : [
+                'cat==1',
+                ],
+
+            'cat1&&cat_btag==H' : [
+                'cat==1',
+                'cat_btag==1',
+                ],
+
+            'cat1&&cat_btag!=H' : [
+                'cat==1',
+                'cat_btag<1',
+                ],
+
+            'cat2' : [
+                'cat==2',
+                ],
+
+            'cat2&&cat_btag==H' : [
+                'cat==2',
+                'cat_btag==1',
+                ],
+
+            'cat2&&cat_btag!=H' : [
+                'cat==2',
+                'cat_btag<1',
+                ],
+
+            'cat3' : [
+                'cat==3',
+                ],
+
+            'cat3&&cat_btag==H' : [
+                'cat==3',
+                'cat_btag==1',
+                ],
+
+            'cat3&&cat_btag!=H' : [
+                'cat==3',
+                'cat_btag<1',
+                ],
+
+            'cat12' : [
+                'cat==1',
+                'cat==2',
+                ],
+
+            'cat123' : [
+                'cat>=1',
+                'cat<=3',
+                ],
+
+            'Allcat' : [
+                ],
+
+            }
