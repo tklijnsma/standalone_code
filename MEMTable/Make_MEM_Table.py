@@ -25,13 +25,15 @@ from MEM_Table_config import MEM_Table_configuration
 def Get_hist_efficiency( hist ):
 
     n_bins = hist.GetSize() - 2 # Subtract for underflow and overflow bins
-    n_entries = hist.GetEntries()
+    n_entries = hist.Integral()
+
+    #print n_entries
 
     if n_entries == 0:
         return [ 0.0, 1.0 ]
 
     # Create list of values between 0.0 and 1.0
-    N = 100
+    N = n_bins - 1 # -1 to be sure all points are in there
     Dcuts = [ float(x)/N for x in range(N-1,-1,-1) ]
 
     # Create iterable object and call the first element
@@ -52,7 +54,7 @@ def Get_hist_efficiency( hist ):
     # Loop: Start with the last bin, and continuously sum up bins. As soon as a cut
     # value of sig/(sig+const(bkg) is reached, save the efficiency
 
-    for i_bin in range(99,-1,-1):
+    for i_bin in range(n_bins-1,-1,-1):
         
         n += hist.GetBinContent(i_bin)
 
@@ -93,10 +95,11 @@ def Get_ROC_TGraph( sig_eff, bkg_eff ):
 
 class MEM_Tablecell_Object():
 
-    def __init__( self, x_key, y_key ):
+    def __init__( self, x_key, y_key, config ):
 
         self.x_key = x_key
         self.y_key = y_key
+        self.config = config
 
         self.draw_dict      = {}
         self.mem_hist_dict  = {}
@@ -126,17 +129,26 @@ class MEM_Tablecell_Object():
             # Dictionary of draw strings per histogram
             self.draw_dict[hypo][key] = \
                 'mem_tth_p[{0}]/(mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}])' \
-                '>>{2}(100,0.0,1.0)'.format(
+                '>>{2}({3},0.0,1.0)'.format(
                     i_hypo,
                     bkg_constant,
                     self.histnames_dict[hypo][key],
+                    self.config.n_mem_hist_bins
                     )
+
+        #self.sel_strs[hypo] = 'mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}]>0'.format(
+        #                            i_hypo, bkg_constant )
+
+
+    def Set_sel_strs_per_hypo( self, config ):
 
         # Only select non-zero results
         # (This is the only selection that differs per hypothesis,
         # but it is still the same for sig and bkg)
-        self.sel_strs[hypo] = 'mem_tth_p[{0}]+{1}*mem_ttbb_p[{0}]>0'.format(
-                                    i_hypo, bkg_constant )
+
+        self.sel_strs = copy.deepcopy(config.sel_dict_per_hypo)
+
+
 
 
     def Print_Object(self): # OUTDATED
@@ -178,6 +190,9 @@ class MEM_Tablecell_Object():
             histname = self.histnames_dict[hypo][key]
             draw_str = self.draw_dict[hypo][key]
             sel_str = self.sel_strs[hypo]
+
+            if hasattr(self.config, 'UseGenWeights') and self.config.UseGenWeights:
+                sel_str = 'genWeight*(' + sel_str + ')'
 
             # Retrieve the histogram
             n_entries = input_tree.Draw( draw_str, sel_str )
@@ -253,7 +268,8 @@ class MEM_Tablecell_Object():
             anchorx_shift = 0.15
 
             # To be overridden by the maximum of the highest histogram
-            y_axis_cut = 0.0
+            y_axis_max = 0.0
+            y_axis_min = 0.0
 
             for hypo in hypo_list:
 
@@ -262,7 +278,10 @@ class MEM_Tablecell_Object():
 
                 # Find maximum in all histograms
                 mem_hist_max = mem_hist.GetMaximum()
-                if mem_hist_max > y_axis_cut: y_axis_cut = mem_hist_max
+                if mem_hist_max > y_axis_max: y_axis_max = mem_hist_max
+
+                mem_hist_min = mem_hist.GetMinimum()
+                if mem_hist_min < y_axis_min: y_axis_min = mem_hist_min
 
                 LineColor_counter += 1
 
@@ -271,7 +290,7 @@ class MEM_Tablecell_Object():
                 if LineColor_counter == 5: LineColor_counter += 1
 
                 mem_hist.SetLineColor(LineColor_counter)
-                mem_hist.Draw('SAME')
+                mem_hist.Draw('HISTSAME')
 
 
                 # Adding labels to plot
@@ -297,7 +316,8 @@ class MEM_Tablecell_Object():
                 anchory -= big_endl
 
 
-            empty_hist.SetMaximum(y_axis_cut+1.0)
+            empty_hist.SetMinimum(y_axis_min)
+            empty_hist.SetMaximum(y_axis_max+1.0)
             c1.Update()
 
             # IO operations
@@ -443,15 +463,21 @@ def main():
     ROOT.gStyle.SetOptFit(1011)
     ROOT.gStyle.SetOptStat(0)
 
-    input_path = '/shome/tklijnsm/Samples/MEMresults/'
+    ROOT.TH1.SetDefaultSumw2(True)
+
+    if not hasattr( config, 'input_path' ):
+        input_path = '/shome/tklijnsm/Samples/MEMresults/'
+    else:
+        input_path = config.input_path
 
     sig_input_root_fn = 'tth_V11_13tev.root'
     bkg_input_root_fn = 'ttjets_V11_13tev.root'
 
-    # Clean up output directory
-    if os.path.isdir( output_dir ):
-        shutil.rmtree( output_dir )
-    os.makedirs( output_dir + '/plots' )    
+    # Clean up output directory (only if plots will be drawn)
+    if config.Draw_plots:
+        if os.path.isdir( output_dir ):
+            shutil.rmtree( output_dir )
+        os.makedirs( output_dir + '/plots' )    
 
     # Set up ROC canvas
     c2 = ROOT.TCanvas("c2","c2",600,400)
@@ -480,7 +506,7 @@ def main():
         MEM_Table[x_key] = {}
         for y_key in y_key_list:
             # Initialize a cell
-            MEM_Table[x_key][y_key] = MEM_Tablecell_Object(x_key,y_key)
+            MEM_Table[x_key][y_key] = MEM_Tablecell_Object(x_key,y_key,config)
 
 
     ########################################
@@ -512,6 +538,7 @@ def main():
 
                 # Sets the draw strings and the unique selection strings
                 cell.Set_draw_strs( hypo, i_hypo, bkg_constant )
+                cell.Set_sel_strs_per_hypo( config )
 
                 # Initialize list of selection strings
                 sel_list = []
@@ -526,74 +553,77 @@ def main():
 
                 # Add the full selection string to the selection strings in the class
                 if full_sel_str != '':
-                    cell.sel_strs[hypo] += '&&' + full_sel_str
+                    if cell.sel_strs[hypo] != '':
+                        cell.sel_strs[hypo] += '&&'
+                    cell.sel_strs[hypo] += full_sel_str
 
                 cell.Create_MEM_ratio_hists( hypo, IO_dict )
 
                 cell.Create_ROC_TGraphs( hypo, IO_dict )
 
 
+    if config.Draw_plots:
 
-    # Draw the ROC after the loop (includes all comparisons)
+        # Draw the ROC after the loop (includes all comparisons)
 
-    print '\nDrawing all MEM ratio plots'
-    for x_key in x_key_list:
-        for y_key in y_key_list:
-            MEM_Table[x_key][y_key].Create_MEM_ratio_Image( hypo_list, IO_dict )
-
-    print 'Drawing all ROC plots'
-    for x_key in x_key_list:
-        for y_key in y_key_list:
-            MEM_Table[x_key][y_key].Create_ROC_Image( hypo_list, IO_dict )
-
-
-    ########################################
-    # Creating the html-files
-    ########################################
-
-    print 'Creating html files'
-
-    # Create the overview html-files
-    hf_overview = open( output_dir + '/' + 'MEM_overview.html' , 'w' )
-    hf_overview.write( '<html><body>\n<h1>MEM Ratio plots\n</h1>\n<br>\n<hr />' )
-
-    # Create the table html file
-    hf_table = open( '{0}/MEM_Table.html'.format( output_dir ) , 'w' )
-    hf_table.write( '<html><body>\n<h1>MEM Table\n</h1>\n<br>\n<hr />' )
-
-    # Fill the overview html files
-    for x_key in x_key_list:
-        for y_key in y_key_list:
-            # Set 'cell' as the current cell for easy reference
-            cell = MEM_Table[x_key][y_key]
-
-            for key in [ 'sig', 'bkg' ]:
-                hf_overview.write(
-                    '<a href="{0}"><img width="450" src="{0}.png"></a>\n'.format(
-                        cell.MEM_html_link_dict[key]) )
-
-            # Write the ROC curve plus html anchor to overview
-            hf_overview.write('<a name="{0}"></a>\n'.format(cell.ROC_html_anchor) )
-            hf_overview.write('<a href="{0}"><img width="400" src="{0}.png">' \
-                              '</a>\n'.format(cell.ROC_html_link) )
-            hf_overview.write('<br>\n')
-
-
-    # Fill the table html file
-    for y_key in y_key_list:
+        print '\nDrawing all MEM ratio plots'
         for x_key in x_key_list:
-            # Set 'cell' as the current cell for easy reference
-            cell = MEM_Table[x_key][y_key]
+            for y_key in y_key_list:
+                MEM_Table[x_key][y_key].Create_MEM_ratio_Image( hypo_list, IO_dict )
 
-            hf_table.write('<a href="{0}"><img width="250" src="{1}.png">' \
-                '</a>\n'.format(
-                    'MEM_overview.html#' + cell.ROC_html_anchor,
-                    cell.ROC_html_link ) )
+        print 'Drawing all ROC plots'
+        for x_key in x_key_list:
+            for y_key in y_key_list:
+                MEM_Table[x_key][y_key].Create_ROC_Image( hypo_list, IO_dict )
 
-        hf_table.write('<br>\n')
 
-    hf_overview.close()
-    hf_table.close()
+        ########################################
+        # Creating the html-files
+        ########################################
+
+        print 'Creating html files'
+
+        # Create the overview html-files
+        hf_overview = open( output_dir + '/' + 'MEM_overview.html' , 'w' )
+        hf_overview.write( '<html><body>\n<h1>MEM Ratio plots\n</h1>\n<br>\n<hr />' )
+
+        # Create the table html file
+        hf_table = open( '{0}/MEM_Table.html'.format( output_dir ) , 'w' )
+        hf_table.write( '<html><body>\n<h1>MEM Table\n</h1>\n<br>\n<hr />' )
+
+        # Fill the overview html files
+        for x_key in x_key_list:
+            for y_key in y_key_list:
+                # Set 'cell' as the current cell for easy reference
+                cell = MEM_Table[x_key][y_key]
+
+                for key in [ 'sig', 'bkg' ]:
+                    hf_overview.write(
+                        '<a href="{0}"><img width="450" src="{0}.png"></a>\n'.format(
+                            cell.MEM_html_link_dict[key]) )
+
+                # Write the ROC curve plus html anchor to overview
+                hf_overview.write('<a name="{0}"></a>\n'.format(cell.ROC_html_anchor) )
+                hf_overview.write('<a href="{0}"><img width="400" src="{0}.png">' \
+                                  '</a>\n'.format(cell.ROC_html_link) )
+                hf_overview.write('<br>\n')
+
+
+        # Fill the table html file
+        for y_key in y_key_list:
+            for x_key in x_key_list:
+                # Set 'cell' as the current cell for easy reference
+                cell = MEM_Table[x_key][y_key]
+
+                hf_table.write('<a href="{0}"><img width="250" src="{1}.png">' \
+                    '</a>\n'.format(
+                        'MEM_overview.html#' + cell.ROC_html_anchor,
+                        cell.ROC_html_link ) )
+
+            hf_table.write('<br>\n')
+
+        hf_overview.close()
+        hf_table.close()
 
         
 ########################################
