@@ -87,6 +87,16 @@ def Get_ROC_TGraph( sig_eff, bkg_eff ):
     return ROC
         
 
+def Get_sel_list( sel_key, sel_dict ):
+
+    all_keys = sel_key.split('&&')
+
+    sel_list = []
+    for key in all_keys:
+        sel_list.extend( sel_dict[key] )
+
+    return sel_list
+
 
 
 ########################################
@@ -470,8 +480,15 @@ def main():
     else:
         input_path = config.input_path
 
-    sig_input_root_fn = 'tth_V11_13tev.root'
-    bkg_input_root_fn = 'ttjets_V11_13tev.root'
+    # Actual root file names
+    if hasattr( config, 'sig_input_root_fn' ):
+        sig_input_root_fn = config.sig_input_root_fn
+    else:
+        sig_input_root_fn = 'tth_V11_13tev.root'
+    if hasattr( config, 'bkg_input_root_fn' ):
+        bkg_input_root_fn = config.bkg_input_root_fn
+    else:
+        bkg_input_root_fn = 'ttjets_V11_13tev.root'
 
     # Clean up output directory (only if plots will be drawn)
     if config.Draw_plots:
@@ -544,8 +561,8 @@ def main():
                 sel_list = []
 
                 # Load the selection strings from both axes into it
-                sel_list.extend( sel_dict[x_key] )
-                sel_list.extend( sel_dict[y_key] )
+                sel_list.extend( Get_sel_list( x_key, sel_dict ) )
+                sel_list.extend( Get_sel_list( y_key, sel_dict ) )
                 sel_list.extend( sel_list_for_all )
 
                 # Build the actual selection string
@@ -586,6 +603,7 @@ def main():
         # Create the overview html-files
         hf_overview = open( output_dir + '/' + 'MEM_overview.html' , 'w' )
         hf_overview.write( '<html><body>\n<h1>MEM Ratio plots\n</h1>\n<br>\n<hr />' )
+        hf_overview.write( '\n<h2>Signal ---------- Background ---------- ROC\n</h2>\n<br>\n' )
 
         # Create the table html file
         hf_table = open( '{0}/MEM_Table.html'.format( output_dir ) , 'w' )
