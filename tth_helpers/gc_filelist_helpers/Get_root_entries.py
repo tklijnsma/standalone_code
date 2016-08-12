@@ -28,21 +28,23 @@ def main():
     # ==================
     # Input
 
-    input_dir = 'V12'
+    input_dir = 'V12_test2'
 
     if len( sys.argv ) == 2:
         SB = sys.argv[1]
     else:
-        #SB = 'sig'
-        SB = 'bkg'
+        SB = 'sig'
+        #SB = 'bkg'
 
     # ==================
 
 
     if SB == 'sig':
         f_in = open( '{0}/tth_V12_13tev.txt'.format(input_dir), 'r' )
+        #f_count = open( '{0}/COUNT_tth_V12_13tev.txt'.format(input_dir), 'r' )
     if SB == 'bkg':
         f_in = open( '{0}/ttjets_V12_13tev.txt'.format(input_dir), 'r' )
+        #f_count = open( '{0}/COUNT_ttjets_V12_13tev.txt'.format(input_dir), 'r' )
 
     # Create list of all filenames
     all_filenames = []
@@ -57,6 +59,8 @@ def main():
     # Initialize list to store filesizes (in # of events)
     all_filesizes = []
 
+    n_total_count = 0
+
     # Loop over files, count entries
     for i_f, filename in enumerate(all_filenames):
         #if i_f > 400: break
@@ -65,13 +69,23 @@ def main():
         print filename
 
         root_file = ROOT.TFile.Open(lfn_to_pfn(filename))
+
         root_tree = root_file.Get("tree")
         n_entries = root_tree.GetEntries()
-        root_file.Close()
 
         all_filesizes.append( n_entries )
 
-        print 'Found entries: {0}'.format( n_entries )
+        TH1F_count = root_file.Get("Count")
+        n_count = TH1F_count.Integral()
+
+        if SB == 'sig' and n_entries >= 30000:
+            n_total_count += n_count
+        if SB == 'bkg' and n_entries >= 30000:
+            n_total_count += n_count
+
+        print 'Found entries: {0}  Found count: {1}'.format( n_entries, n_count )
+
+        root_file.Close()
 
     output_dir = '{0}/output'.format(input_dir)
     if not os.path.isdir( output_dir ):
@@ -85,6 +99,8 @@ def main():
     print '\nEntries stored in {0}/all_{1}.dat'.format( output_dir, SB )
     print 'Run Format_filenames.py to cut on entries and to get well formatted files'
 
+
+    print 'Total found count = {0}'.format( n_total_count )
 
 ########################################
 # End of Main

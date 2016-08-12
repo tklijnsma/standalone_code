@@ -21,9 +21,9 @@ def Make_images( fn_out, c1 ):
 
     c1.Print( fn_out + '.pdf' ,'pdf')
 
-    img = ROOT.TImage.Create()
-    img.FromPad(c1)
-    img.WriteImage( fn_out + '.png' )
+    #img = ROOT.TImage.Create()
+    #img.FromPad(c1)
+    #img.WriteImage( fn_out + '.png' )
 
 
 
@@ -61,7 +61,7 @@ def main():
 
     particles = [ 'b' , 'l' ]
     etas = [ 0 , 1 ]
-    pts = [ 0, 1, 2, 3, 4, 5, 54, 55, 56, 57 ]
+    pts = [ 1, 2, 3, 55, 56 ]
 
 
     for particle in particles:
@@ -86,6 +86,9 @@ def main():
 
 
                 hist.GetXaxis().SetTitle("p_{T} (GeV)")
+                hist.GetYaxis().SetTitle("Entries")
+                hist.GetYaxis().SetTitleOffset(1.4)
+                hist.SetLineWidth(2)
 
                 hist.Draw() 
 

@@ -14,9 +14,11 @@ import copy
 import ROOT
 import TTH.TTHNtupleAnalyzer.AccessHelpers as AH
 from itertools import cycle
+import pickle
 
 from MEM_Table_config import MEM_Table_configuration
 
+hist_counter = 0
 
 ########################################
 # Functions
@@ -122,11 +124,14 @@ class MEM_Tablecell_Object():
 
     def Set_draw_strs( self, hypo, i_hypo, bkg_constant ):
 
+        global hist_counter
+
         self.histnames_dict[hypo] = {}
         self.draw_dict[hypo] = {}
 
         for key in [ 'sig', 'bkg' ]:
 
+            """
             # Dictionary of histogram names
             self.histnames_dict[hypo][key] = \
                 '{0}_{1}_{2}_{3}'.format(
@@ -135,6 +140,11 @@ class MEM_Tablecell_Object():
                     self.x_key,
                     self.y_key,
                     )
+            """
+            # Dictionary of histogram names
+            self.histnames_dict[hypo][key] = str(hist_counter)
+            hist_counter += 1
+
 
             # Dictionary of draw strings per histogram
             self.draw_dict[hypo][key] = \
@@ -201,8 +211,44 @@ class MEM_Tablecell_Object():
             draw_str = self.draw_dict[hypo][key]
             sel_str = self.sel_strs[hypo]
 
+
             if hasattr(self.config, 'UseGenWeights') and self.config.UseGenWeights:
                 sel_str = 'genWeight*(' + sel_str + ')'
+
+            if ( hasattr(self.config, 'UsePhysical') and
+                 self.config.UsePhysical ):
+
+
+                # Get sum of weights of histogram
+
+                if key == 'bkg':
+                    n_weight_pos = input_tree.Draw( 'genWeight',
+                                                     sel_str + '&&genWeight>0' )
+
+                    n_weight_neg = input_tree.Draw( 'genWeight',
+                                                     sel_str + '&&genWeight<0' )
+
+                    sum_weights = ( n_weight_pos - n_weight_neg ) * 6384.0
+
+                if key == 'sig':
+                    sum_weights = input_tree.Draw( 'genWeight', sel_str )
+
+                try:
+                    weight_factor = ( ( self.config.sigma_p[key] *
+                                        self.config.target_lumi ) /
+                                      ( self.config.total_count[key] *
+                                        self.config.genWeight_norm[key] )
+                                    )
+
+                except ZeroDivisionError:
+                    weight_factor = 0.0
+
+
+                #print '        sum_weights = {0}   weight_factor = {1}'.format(
+                #    sum_weights, weight_factor )
+
+                sel_str = 'genWeight*{0}*({1})'.format( weight_factor, sel_str )
+
 
             # Retrieve the histogram
             n_entries = input_tree.Draw( draw_str, sel_str )
@@ -216,6 +262,9 @@ class MEM_Tablecell_Object():
 
             # Save the histogram to the cell object
             self.mem_hist_dict[hypo][key] = copy.deepcopy( mem_hist )
+
+            # Avoid memory overload
+            input_root_file.Close()
 
         
     def Create_ROC_TGraphs(self, hypo, IO_dict ):
@@ -315,19 +364,19 @@ class MEM_Tablecell_Object():
                 lbl.DrawText(
                     anchorx+anchorx_shift,
                     anchory,
-                    '{0:.0f}'.format( self.mem_hist_dict[hypo]['sig'].GetEntries()) )
+                    '{0:.4f}'.format( self.mem_hist_dict[hypo]['sig'].Integral()) )
                 anchory -= endl
 
                 lbl.DrawText( anchorx, anchory , 'bkg entries' )
                 lbl.DrawText(
                     anchorx+anchorx_shift,
                     anchory,
-                    '{0:.0f}'.format( self.mem_hist_dict[hypo]['bkg'].GetEntries()) )
+                    '{0:.4f}'.format( self.mem_hist_dict[hypo]['bkg'].Integral()) )
                 anchory -= big_endl
 
 
             empty_hist.SetMinimum(y_axis_min)
-            empty_hist.SetMaximum(y_axis_max+1.0)
+            empty_hist.SetMaximum(y_axis_max*1.1)
             c1.Update()
 
             # IO operations
@@ -442,13 +491,14 @@ class MEM_Tablecell_Object():
 # Main
 ########################################
 
-def main():
+def main_MEM_Table( config = False ):
 
     ########################################
     # Read configuration
     ########################################
 
-    config = MEM_Table_configuration()
+    if not config:
+        config = MEM_Table_configuration()
 
     input_dir = config.input_dir
     output_dir = config.output_dir
@@ -467,6 +517,7 @@ def main():
     # Set up for loop
     ########################################
 
+    ROOT.gROOT.Reset()
     ROOT.gROOT.SetBatch(True)
     ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = 1001;")
 
@@ -494,7 +545,14 @@ def main():
     if config.Draw_plots:
         if os.path.isdir( output_dir ):
             shutil.rmtree( output_dir )
-        os.makedirs( output_dir + '/plots' )    
+        os.makedirs( output_dir + '/plots' )
+        os.makedirs( output_dir + '/used_pys' )
+
+    # Copy MEM_Table_config.py to the outputdir (easily repeatable that way)
+    shutil.copyfile('MEM_Table_config.py',
+                    output_dir + '/used_pys/MEM_Table_config.py' )
+    shutil.copyfile('Make_MEM_Table.py',
+                    output_dir + '/used_pys/Make_MEM_Table.py' )
 
     # Set up ROC canvas
     c2 = ROOT.TCanvas("c2","c2",600,400)
@@ -643,9 +701,15 @@ def main():
         hf_overview.close()
         hf_table.close()
 
+        if hasattr(config, 'Store_table_as_picke') and config.Store_table_as_picke:
+            print 'Writing MEM Table to pickle file'
+            f_pickle = open( output_dir + '/MEM_Table.pickle', 'wb' )
+            pickle.dump( MEM_Table, f_pickle )
+            f_pickle.close()
+
         
 ########################################
 # End of Main
 ########################################
 if __name__ == "__main__":
-    main()
+    main_MEM_Table()

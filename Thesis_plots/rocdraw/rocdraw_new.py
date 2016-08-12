@@ -99,7 +99,8 @@ def Draw_PSB_Distr( MEM_Table, config, c1 ):
             hist.SetLineColor( config.hypo_colors[ID] )
 
             integral[key] = float(hist.Integral())
-            hist.Scale( 1.0 / integral[key] )
+            if integral[key] != 0.0:
+                hist.Scale( 1.0 / integral[key] )
 
             # Draw
             hist.Draw('HISTSAME')
@@ -113,9 +114,13 @@ def Draw_PSB_Distr( MEM_Table, config, c1 ):
             lbl.DrawText( anchorx+nc, anchory, '{0:.1f}'.format(integral[key]))
             anchory -= nl
 
+        try:
+            SoverB = integral['sig'] / integral['bkg']
+        except ZeroDivisionError:
+            SoverB = 0.0
+
         lbl.DrawText( anchorx, anchory , 'S/B'.format(key) )
-        lbl.DrawText( anchorx+nc, anchory, '{0:.2f}'.format(
-            integral['sig'] / integral['bkg'] ))
+        lbl.DrawText( anchorx+nc, anchory, '{0:.2f}'.format( SoverB ))
         anchory -= nl
 
     base_hist.SetMinimum( 0.01 )
@@ -155,14 +160,14 @@ def Draw_ROC_Curve( MEM_Table, config, c1 ):
     #base_graph.GetYaxis().SetLimits(0.0,1.0)
 
     anchorx  = 0.15
-    anchory  = 0.25
+    anchory  = 0.15
     nl       = 0.05
 
-    for ( ID, x_key, y_key, hypo ) in config.hypo_list:
+    for ( ID, x_key, y_key, hypo ) in reversed(config.hypo_list):
 
         lbl.SetTextColor( config.hypo_colors[ID] )
         lbl.DrawText( anchorx, anchory, config.hypo_prints[ID] )
-        anchory -= nl
+        anchory += nl
 
         # Load roc TGraph
         roc = MEM_Table[x_key][y_key].ROC_TGraphs_dict[hypo]

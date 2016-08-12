@@ -52,7 +52,7 @@ def Draw_Hists_and_Fits():
     c1 = ROOT.TCanvas("c1","c1",500,400)
     c1.SetGrid()
     c1.SetTopMargin(0.13)
-    c1.SetLeftMargin(0.12)
+    c1.SetLeftMargin(0.13)
 
     #for particle in config['particles']:
     #    for i_eta in range( len(config['eta_axis']) - 1 ):
@@ -60,7 +60,7 @@ def Draw_Hists_and_Fits():
 
     for particle in ['b']:
         for i_eta in range( 1 ):
-            for i_E in [ 10, 27, 50 ]:
+            for i_E in [ 10, 27, 50, 56 ]:
 
                 hist = SB_dicts[particle][i_eta][i_E]['hist']
                 hist.SetLineWidth(2)

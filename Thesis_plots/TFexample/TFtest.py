@@ -33,7 +33,7 @@ def main():
     c1 = ROOT.TCanvas("c1","c1",500,400)
     c1.SetGrid()
 
-    outputdir = 'TFtest_output'
+    outputdir = 'TFtest_output_revised'
 
     if not os.path.isdir( outputdir ):
         os.makedirs( outputdir + '/plots' )
@@ -196,19 +196,20 @@ def main():
 
 
         # Legend
-        leg = ROOT.TLegend(0.6,0.78,0.88,0.88)
+        leg = ROOT.TLegend(0.7,0.78,0.88,0.88)
         leg.SetTextAlign(12)
         leg.SetFillStyle(0)
         ROOT.gStyle.SetLegendBorderSize(0)
-        leg.AddEntry( f1, 'Reconstr. p_{T}', 'l' )
-        leg.AddEntry( v_line, 'MC Gen. p_{T}', 'l' )
+        leg.AddEntry( f1, 'P(p_{T,reco})', 'l' )
+        leg.AddEntry( v_line, 'p_{T,gen}', 'l' )
         leg.Draw("SAME")
 
         
         #x_label = ROOT.TLatex( 0.0, 0.0, 'p_T');
         #f1.GetXaxis().SetTitle( x_label )
         f1.GetXaxis().SetTitle( "p_{T} (GeV)" )
-
+        f1.GetYaxis().SetTitle( "A.U." )
+        f1.GetYaxis().SetTitleOffset(1.3)
 
 
         c1.Update()

@@ -38,8 +38,10 @@ def main():
     ROOT.gStyle.SetOptFit(1011)
     ROOT.gStyle.SetOptStat(0)
 
-    c1 = ROOT.TCanvas("c1","c1",500,400)
+    c1 = ROOT.TCanvas("c1","c1",400,400)
     c1.SetGrid()
+    c1.SetLeftMargin(0.12)
+    c1.SetBottomMargin(0.12)
 
     outputdir = 'plots'
 
@@ -83,6 +85,16 @@ def main():
 
     pt_hist_bc.SetTitle('')    
     pt_hist_bc.Draw()
+    pt_hist_bc.SetLineWidth(2)
+
+    pt_hist_bc.GetXaxis().SetTitle('p_{T,reco} (GeV)')
+    pt_hist_bc.GetXaxis().SetTitleSize(0.05)
+    pt_hist_bc.GetXaxis().SetTitleOffset(1.0)
+
+    pt_hist_bc.GetYaxis().SetTitle('Entries')
+    pt_hist_bc.GetYaxis().SetTitleSize(0.05)
+    pt_hist_bc.GetYaxis().SetTitleOffset(1.1)
+
     pt_hist_bc.SetMaximum( 500000.0 )
 
     fn_out = outputdir + '/pt_hist_bc'
@@ -95,6 +107,15 @@ def main():
 
     pt_hist_ac.SetTitle('')
     pt_hist_ac.Draw()
+
+    pt_hist_ac.GetXaxis().SetTitle('p_{T,reco} (GeV)')
+    pt_hist_ac.GetXaxis().SetTitleSize(0.05)
+    pt_hist_ac.GetXaxis().SetTitleOffset(1.0)
+
+    pt_hist_ac.GetYaxis().SetTitle('Entries')
+    pt_hist_ac.GetYaxis().SetTitleSize(0.05)
+    pt_hist_ac.GetYaxis().SetTitleOffset(1.1)
+
     pt_hist_ac.SetMaximum( 500000.0 )
 
     fn_out = outputdir + '/pt_hist_ac'

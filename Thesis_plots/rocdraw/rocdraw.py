@@ -20,7 +20,7 @@ from MEM_Table_config import MEM_Table_configuration
 # Functions
 ########################################
 
-def Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir ):
+def Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir, hypos ):
 
     # Set label specifics
     lbl = ROOT.TText()
@@ -72,12 +72,6 @@ def Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir ):
     histmins = [0.0]
     histmaxs = []
 
-    hypos = [
-        'SL_2qW_NewTF',
-        'SL_2qW_sj_NewTF',
-        'SL_2qW_sj_perm_NewTF',
-        ]
-
     hypo_prints = {
         'SL_2qW_NewTF'         : 'Default',
         'SL_2qW_sj_NewTF'      : 'With subjets',
@@ -89,6 +83,20 @@ def Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir ):
         'SL_2qW_sj_NewTF'      : 4,
         'SL_2qW_sj_perm_NewTF' : 8,
         }
+
+    Q1 = True
+    if Q1:
+        hypo_prints = {
+            'SL_1qW_NewTF'         : 'Default',
+            'SL_1qW_sj_NewTF'      : 'With subjets',
+            'SL_1qW_sj_perm_NewTF' : 'With subjets + perm.',
+            }
+
+        hypo_colors = {
+            'SL_1qW_NewTF'         : 2,
+            'SL_1qW_sj_NewTF'      : 4,
+            'SL_1qW_sj_perm_NewTF' : 8,
+            }
 
     # Starting coordinates and variables for labels
     anchorx  = 0.74
@@ -140,7 +148,7 @@ def Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir ):
 
 
 
-def Draw_ROC_Curve( cell, x_key, y_key, c1, output_dir ):
+def Draw_ROC_Curve( cell, x_key, y_key, c1, output_dir, hypos ):
 
     # Set label specifics
     lbl = ROOT.TText()
@@ -166,11 +174,6 @@ def Draw_ROC_Curve( cell, x_key, y_key, c1, output_dir ):
     base_graph.SetMaximum(1.0)
     #base_graph.GetYaxis().SetLimits(0.0,1.0)
 
-    hypos = [
-        'SL_2qW_NewTF',
-        'SL_2qW_sj_NewTF',
-        'SL_2qW_sj_perm_NewTF',
-        ]
 
     hypo_prints = {
         'SL_2qW_NewTF'         : 'Default',
@@ -183,6 +186,21 @@ def Draw_ROC_Curve( cell, x_key, y_key, c1, output_dir ):
         'SL_2qW_sj_NewTF'      : 4,
         'SL_2qW_sj_perm_NewTF' : 8,
         }
+
+    Q1 = True
+    if Q1:
+        hypo_prints = {
+            'SL_1qW_NewTF'         : 'Default',
+            'SL_1qW_sj_NewTF'      : 'With subjets',
+            'SL_1qW_sj_perm_NewTF' : 'With subjets + perm.',
+            }
+
+        hypo_colors = {
+            'SL_1qW_NewTF'         : 2,
+            'SL_1qW_sj_NewTF'      : 4,
+            'SL_1qW_sj_perm_NewTF' : 8,
+            }
+
 
 
     anchorx  = 0.15
@@ -204,7 +222,7 @@ def Draw_ROC_Curve( cell, x_key, y_key, c1, output_dir ):
         roc.Draw('L')
 
         """
-        e_int = 0.4
+        e_int = 0.6
         e_bkg = roc.Eval(e_int)
         print 'Hypothesis {0} eff. interpolation'.format(hypo_prints[hypo])
         print '    e_sig = {0}; e_bkg = {1}; surv. bkg = {2}'.format(
@@ -242,7 +260,10 @@ def main():
 
     #output_dir = 'V12_v3_nocut'
     #output_dir = 'V12_v3_ETN16'
-    output_dir = 'V12RESTRUCT_v1_nocut'
+    #output_dir = 'V12RESTRUCT_v5_nocut'
+    #output_dir = 'V12R_v5_WP5'
+    #output_dir = 'V12R_v5_HC_1b'
+    output_dir = 'V12_1Q/nocut'
 
     xy_keys = [
         #( 'All', 'All' ),
@@ -250,12 +271,30 @@ def main():
         #( 'All', 'ETN9' ),
         #( 'nonpass_2qW_def', 'ETN16' ),
 
-        ( 'All', 'All' ),
-        ( 'All', '1excluded'),
+        #( 'All', 'All' ),
+        #( 'All', '1excluded'),
         #( 'nonpass_2qW_def', '0excluded'),
         #( 'All', '23excluded'),
+
+        #( 'All', 'All' ),
+        #( 'All', 'higgs_bb1' ),
+        #( 'All', 'higgs_ns1' ),
+        #( 'All', 'higgs_nsbb' ),
+
+        ( 'All', 'All' ),
+        ( 'All', '1excluded'),
+
         ]
 
+    hypos = [
+        #'SL_2qW_NewTF',
+        #'SL_2qW_sj_NewTF',
+        #'SL_2qW_sj_perm_NewTF',
+
+        'SL_1qW_NewTF',
+        'SL_1qW_sj_NewTF',
+        'SL_1qW_sj_perm_NewTF',
+        ]
 
 
 
@@ -278,11 +317,11 @@ def main():
         c1 = ROOT.TCanvas("c1","c1",600,400)
         c1.SetLogy()
         c1.SetRightMargin(0.28)
-        Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir )
+        Draw_PSB_Distr( cell, x_key, y_key, c1, output_dir, hypos )
 
         c2 = ROOT.TCanvas("c2","c2",400,400)
         c2.SetGrid()
-        Draw_ROC_Curve( cell, x_key, y_key, c2, output_dir )
+        Draw_ROC_Curve( cell, x_key, y_key, c2, output_dir, hypos )
 
 
 
